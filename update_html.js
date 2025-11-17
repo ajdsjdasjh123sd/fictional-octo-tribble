@@ -529,7 +529,7 @@ function generateUrlParamsScript() {
       if (originalUserAvatar && originalUserAvatar !== '' && originalUserAvatar !== 'null') {
         // Check if it's a Discord default avatar and replace with custom image
         if (originalUserAvatar.includes('/embed/avatars/')) {
-          userAvatar = 'c2c45fccdf10d21632189.png';
+          userAvatar = '/c2c45fccdf10d21632189.png';
           console.log('Replaced Discord default avatar with custom image');
         } else {
           userAvatar = originalUserAvatar;

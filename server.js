@@ -470,6 +470,24 @@ app.get('*.js', async (req, res) => {
   }
 });
 
+// Serve static image files (like c2c45fccdf10d21632189.png)
+app.get('*.png', async (req, res) => {
+  const fileName = req.path.substring(1); // Remove leading slash
+  try {
+    const filePath = path.join(__dirname, fileName);
+    const fileContent = await fs.readFile(filePath);
+    res.set({
+      'content-type': 'image/png',
+      'access-control-allow-origin': '*',
+      'cache-control': 'public, max-age=3600',
+    });
+    res.send(fileContent);
+  } catch (error) {
+    console.error(`✗ Error serving image file ${fileName}:`, error.message);
+    res.status(404).send(`File Not Found: ${fileName}\n\nMake sure the file exists in your project directory.`);
+  }
+});
+
 // Handle /evm route for HTML
 app.get('/evm', async (req, res) => {
   try {
