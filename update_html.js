@@ -414,8 +414,8 @@ function getCardStyleBlock() {
     border: none;
     border-radius: 50%;
     z-index: 9999;
-    box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.6), 0 0 0 0 rgba(11, 194, 170, 0.3);
-    animation: pulse-teal 1s ease-in-out infinite;
+    box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.7), 0 0 0 0 rgba(11, 194, 170, 0.15);
+    animation: pulse-teal 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     pointer-events: none;
   }
   
@@ -471,10 +471,10 @@ function getCardStyleBlock() {
   
   @keyframes pulse-teal {
     0% {
-      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.6), 0 0 0 0 rgba(11, 194, 170, 0.3);
+      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.7), 0 0 0 0 rgba(11, 194, 170, 0.15);
     }
-    50% {
-      box-shadow: 0 0 0 6px rgba(11, 194, 170, 0), 0 0 0 14px rgba(11, 194, 170, 0);
+    30% {
+      box-shadow: 0 0 0 8px rgba(11, 194, 170, 0), 0 0 0 16px rgba(11, 194, 170, 0);
     }
     100% {
       box-shadow: 0 0 0 0 rgba(11, 194, 170, 0), 0 0 0 0 rgba(11, 194, 170, 0);
