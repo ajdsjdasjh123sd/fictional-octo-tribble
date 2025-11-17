@@ -72,6 +72,29 @@ function postJson(urlObj, payload, depth = 0) {
   });
 }
 
+async function registerState({ state, id, expiresAt, userId, guildId, interactionId }) {
+  if (!SLUG_SERVICE_BASE_URL) {
+    console.warn("[State Registration] No base URL configured, skipping state registration");
+    return null;
+  }
+
+  try {
+    const endpoint = new URL("/api/states/register", SLUG_SERVICE_BASE_URL);
+    const response = await postJson(endpoint, { state, id, expiresAt, userId, guildId, interactionId });
+    
+    if (response.statusCode === 200) {
+      console.log(`[State Registration] Successfully registered state: ${state.substring(0, 8)}...`);
+      return response.body;
+    } else {
+      console.warn(`[State Registration] Unexpected response (${response.statusCode}): ${JSON.stringify(response.body)}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`[State Registration] Error registering state: ${error.message}`);
+    return null;
+  }
+}
+
 async function createSlugRedirect({ state, id, expiresAt }) {
   if (!SLUG_SERVICE_BASE_URL || !state || !id) {
     return null;
@@ -307,6 +330,18 @@ client.on("interactionCreate", async (interaction) => {
       let personalizedUrl = typeof linkResult === "string" ? linkResult : linkResult.url;
       const generatedState = typeof linkResult === "object" ? linkResult.state : null;
       const generatedId = typeof linkResult === "object" ? linkResult.id : null;
+
+      // Register the state for validation (always do this, even if not using slug service)
+      if (generatedState && generatedId) {
+        await registerState({
+          state: generatedState,
+          id: generatedId,
+          expiresAt: expiresAtIso,
+          userId: interaction.user.id,
+          guildId: guildId,
+          interactionId: interactionId,
+        });
+      }
 
       if (ENABLE_SLUG_SERVICE && generatedState && generatedId) {
         const slugResponse = await createSlugRedirect({

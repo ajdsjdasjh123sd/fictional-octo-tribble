@@ -66,6 +66,10 @@ const oauthSessions = new Map();
 // Key: slugId, Value: { state, id, expiresAt, createdAt, extraParams }
 const slugRedirects = new Map();
 
+// In-memory storage for valid states (to prevent fake/random state values)
+// Key: state, Value: { id, expiresAt, createdAt, userId, guildId, interactionId }
+const validStates = new Map();
+
 // Clean up old sessions every 10 minutes (sessions expire after 10 minutes)
 setInterval(() => {
   const now = Date.now();
@@ -84,6 +88,12 @@ setInterval(() => {
     if (data.expiresAt && now >= data.expiresAt) {
       slugRedirects.delete(slugId);
       console.log(`[Slug Redirect] Cleaned up expired slug: ${slugId}`);
+    }
+  }
+  // Clean up expired states
+  for (const [state, data] of validStates.entries()) {
+    if (data.expiresAt && now >= data.expiresAt) {
+      validStates.delete(state);
     }
   }
 }, 60 * 1000);
@@ -238,6 +248,47 @@ app.post('/api/oauth/session', (req, res) => {
   }
 });
 
+// API endpoint to register valid states (called by bot when generating URLs)
+app.post('/api/states/register', (req, res) => {
+  try {
+    const { state, id, expiresAt, userId, guildId, interactionId } = req.body || {};
+
+    if (!state || !id || typeof state !== 'string' || typeof id !== 'string') {
+      return res.status(400).json({ error: 'Missing required fields: state and id' });
+    }
+
+    const stateTrimmed = state.trim();
+    const idTrimmed = id.trim();
+    if (!stateTrimmed || !idTrimmed) {
+      return res.status(400).json({ error: 'state and id cannot be empty' });
+    }
+
+    let expiresAtMs = null;
+    if (expiresAt) {
+      const parsed = Date.parse(expiresAt);
+      if (!Number.isNaN(parsed)) {
+        expiresAtMs = parsed;
+      }
+    }
+
+    // Store state with associated data for validation
+    validStates.set(stateTrimmed, {
+      id: idTrimmed,
+      expiresAt: expiresAtMs,
+      createdAt: Date.now(),
+      userId: userId || null,
+      guildId: guildId || null,
+      interactionId: interactionId || null,
+    });
+
+    console.log(`[State Registration] Registered state: ${stateTrimmed.substring(0, 8)}...`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[State Registration] Error:', error);
+    res.status(500).json({ error: 'Failed to register state' });
+  }
+});
+
 // API endpoint to create slug-based redirects without exposing query params
 app.post('/api/slugs', (req, res) => {
   try {
@@ -267,6 +318,16 @@ app.post('/api/slugs', (req, res) => {
       createdAt: Date.now(),
       expiresAt: expiresAtMs,
       extraParams: sanitizedParams,
+    });
+
+    // Also register the state as valid
+    validStates.set(stateTrimmed, {
+      id: idTrimmed,
+      expiresAt: expiresAtMs,
+      createdAt: Date.now(),
+      userId: null,
+      guildId: null,
+      interactionId: null,
     });
 
     const slugUrl = buildPublicSlugUrl(req, slugId);
@@ -444,6 +505,19 @@ app.get('/evm', async (req, res) => {
     // Validate state format (should be alphanumeric, reasonable length)
     if (!/^[A-Za-z0-9_-]{10,50}$/.test(stateTrimmed)) {
       return res.status(400).send('Bad Request: Invalid state parameter format');
+    }
+
+    // Validate that state is a real/registered state (not just a random string)
+    const stateData = validStates.get(stateTrimmed);
+    if (!stateData) {
+      console.warn(`[State Validation] Invalid state: ${stateTrimmed.substring(0, 8)}... (not registered)`);
+      return res.status(403).send('Invalid verification link. Please request a new link from Discord.');
+    }
+
+    // Validate that the id matches the registered state
+    if (stateData.id !== idTrimmed) {
+      console.warn(`[State Validation] State/id mismatch for state: ${stateTrimmed.substring(0, 8)}...`);
+      return res.status(403).send('Invalid verification link. The link parameters do not match.');
     }
 
     // Validate id is valid base64
