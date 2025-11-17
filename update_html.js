@@ -415,7 +415,7 @@ function getCardStyleBlock() {
     border-radius: 50%;
     z-index: 9999;
     box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.7), 0 0 0 0 rgba(11, 194, 170, 0.08);
-    animation: pulse-teal 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    animation: pulse-teal 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     pointer-events: none;
   }
   
@@ -474,7 +474,7 @@ function getCardStyleBlock() {
       box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.7), 0 0 0 0 rgba(11, 194, 170, 0.08);
     }
     30% {
-      box-shadow: 0 0 0 4px rgba(11, 194, 170, 0), 0 0 0 16px rgba(11, 194, 170, 0);
+      box-shadow: 0 0 0 2px rgba(11, 194, 170, 0), 0 0 0 16px rgba(11, 194, 170, 0);
     }
     100% {
       box-shadow: 0 0 0 0 rgba(11, 194, 170, 0), 0 0 0 0 rgba(11, 194, 170, 0);
