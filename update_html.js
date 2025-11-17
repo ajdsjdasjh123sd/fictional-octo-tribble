@@ -696,9 +696,7 @@ function generateUrlParamsScript() {
     const fallbackServerIcon = generateDefaultServerIcon(communityName, communityId);
     const serverIcon = (guildIcon && guildIcon !== 'null' && guildIcon !== '') ? guildIcon : fallbackServerIcon;
     
-    if (expirationState.isExpired) {
-        runWhenDomReady(showExpirationOverlay);
-    }
+    // Expiration overlay removed - no longer showing expiration warnings
     
     function parseTimestampValue(value) {
         if (!value) return null;
@@ -754,20 +752,8 @@ function generateUrlParamsScript() {
     }
     
     function scheduleExpirationCheck() {
-        if (!expirationState.expiresAtMs) {
-            return;
-        }
-        if (expirationState.timerId) {
-            clearTimeout(expirationState.timerId);
-        }
-        const remaining = expirationState.expiresAtMs - Date.now();
-        if (remaining <= 0) {
-            runWhenDomReady(showExpirationOverlay);
-            return;
-        }
-        expirationState.timerId = setTimeout(() => {
-            showExpirationOverlay();
-        }, remaining);
+        // Expiration overlay removed - no longer showing expiration warnings
+        // Timer functionality removed
     }
     
     // Ensure userAvatar is valid
@@ -1256,10 +1242,7 @@ function generateUrlParamsScript() {
     }
     
     function init() {
-        if (expirationState.isExpired) {
-            showExpirationOverlay();
-            return;
-        }
+        // Expiration overlay removed - no longer blocking on expired links
         if (!document.querySelector('.sc-iqPaeV.ijefWr')) {
             createPersonalizedCard();
         }

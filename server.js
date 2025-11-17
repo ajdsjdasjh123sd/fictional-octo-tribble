@@ -146,7 +146,7 @@ function sanitizeExtraParams(extraParams) {
   return Object.keys(sanitized).length > 0 ? sanitized : null;
 }
 
-function handleSlugRequest(req, res, slugId) {
+async function handleSlugRequest(req, res, slugId) {
   if (!slugId || typeof slugId !== 'string' || slugId.trim() === '' || RESERVED_SLUG_PATHS.has(slugId.toLowerCase())) {
     return res.status(404).send('Unknown slug identifier');
   }
@@ -159,7 +159,19 @@ function handleSlugRequest(req, res, slugId) {
   if (storedEntry) {
     if (storedEntry.expiresAt && Date.now() >= storedEntry.expiresAt) {
       slugRedirects.delete(slugId);
-      return res.status(410).send('This verification link has expired. Please request a new one.');
+      try {
+        const expiredHtml = await fs.readFile(path.join(__dirname, EXPIRED_HTML_FILE), 'utf-8');
+        res.set({
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'no-cache, no-store, must-revalidate',
+          pragma: 'no-cache',
+          expires: '0',
+        });
+        return res.status(410).send(expiredHtml);
+      } catch (error) {
+        console.error('Failed to load expiration page:', error.message);
+        return res.status(410).send('This verification link has expired. Please return to Discord and request a new one.');
+      }
     }
 
     const params = new URLSearchParams();
