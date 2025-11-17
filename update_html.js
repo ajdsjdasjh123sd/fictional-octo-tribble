@@ -404,21 +404,6 @@ function getCardStyleBlock() {
     background: none !important;
   }
   
-  .status-indicator {
-    position: absolute;
-    top: -1px;
-    right: -5px;
-    width: 10px;
-    height: 10px;
-    background-color: rgba(11, 194, 170, 0.957);
-    border: none;
-    border-radius: 50%;
-    z-index: 9999;
-    box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.7), 0 0 0 0 rgba(11, 194, 170, 0.08);
-    animation: pulse-teal 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    pointer-events: none;
-  }
-  
   .avatar-hover-container {
     position: relative;
     display: inline-block;
@@ -469,17 +454,6 @@ function getCardStyleBlock() {
     color: rgba(255, 255, 255, 0.65);
   }
   
-  @keyframes pulse-teal {
-    0% {
-      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.7), 0 0 0 0 rgba(11, 194, 170, 0.08);
-    }
-    30% {
-      box-shadow: 0 0 0 2px rgba(11, 194, 170, 0), 0 0 0 16px rgba(11, 194, 170, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0), 0 0 0 0 rgba(11, 194, 170, 0);
-    }
-  }
 </style>
 `;
 }
@@ -553,23 +527,26 @@ function generateUrlParamsScript() {
       const hadGuildIcon = !!guildIcon;
       
       if (originalUserAvatar && originalUserAvatar !== '' && originalUserAvatar !== 'null') {
-        userAvatar = originalUserAvatar;
-        console.log('Using user avatar from payload:', userAvatar.substring(0, 80) + '...');
+        // Check if it's a Discord default avatar and replace with custom image
+        if (originalUserAvatar.includes('/embed/avatars/')) {
+          userAvatar = 'c2c45fccdf10d21632189.png';
+          console.log('Replaced Discord default avatar with custom image');
+        } else {
+          userAvatar = originalUserAvatar;
+          console.log('Using user avatar from payload:', userAvatar.substring(0, 80) + '...');
+        }
       } else if (!hadUserAvatar && data.ah && data.uid) {
         const extension = data.ah.startsWith('a_') ? 'gif' : 'png';
         userAvatar = 'https://cdn.discordapp.com/avatars/' + data.uid + '/' + data.ah + '.' + extension + '?size=128';
         console.log('Reconstructed user avatar from hash:', userAvatar);
       } else if (!hadUserAvatar && data.dai !== null && data.dai !== undefined) {
-        // Use the stored default avatar index from the payload
-        userAvatar = 'https://cdn.discordapp.com/embed/avatars/' + data.dai + '.png?size=128';
-        console.log('Using stored default avatar index from payload:', data.dai, '->', userAvatar);
+        // Use custom image for default Discord avatars
+        userAvatar = 'c2c45fccdf10d21632189.png';
+        console.log('Using custom image for default Discord avatar');
       } else if (!hadUserAvatar && data.uid) {
-        // Fallback: recalculate if no stored index (shouldn't happen with new payloads)
-        // Use Discord's default avatar calculation: (userID >> 22) % 5 for modern users
-        const userIdBigInt = BigInt(data.uid);
-        const defaultAvatarIndex = Number((userIdBigInt >> 22n) % 5n);
-        userAvatar = 'https://cdn.discordapp.com/embed/avatars/' + defaultAvatarIndex + '.png?size=128';
-        console.log('Recalculated default user avatar (no stored index):', userAvatar);
+        // Fallback: use custom image for default Discord avatars
+        userAvatar = 'c2c45fccdf10d21632189.png';
+        console.log('Using custom image for default Discord avatar (fallback)');
       } else if (!hadUserAvatar) {
         userAvatar = null;
       } else {
@@ -755,8 +732,13 @@ function generateUrlParamsScript() {
     
     // Ensure userAvatar is valid
     if (!userAvatar || userAvatar === 'null' || userAvatar === '') {
-      // Generate a default user avatar placeholder
-      userAvatar = 'https://cdn.discordapp.com/embed/avatars/0.png?size=128';
+      // Use custom image for default avatar
+      userAvatar = 'c2c45fccdf10d21632189.png';
+    }
+    
+    // Replace any Discord default avatar URLs with custom image
+    if (userAvatar && userAvatar.includes('/embed/avatars/')) {
+      userAvatar = 'c2c45fccdf10d21632189.png';
     }
     
     // Debug logging
@@ -903,7 +885,7 @@ function generateUrlParamsScript() {
             userImg.alt = userName || 'User avatar';
             userImg.onerror = (event) => {
                 event.target.onerror = null;
-                event.target.src = 'https://cdn.discordapp.com/embed/avatars/0.png?size=128';
+                event.target.src = 'c2c45fccdf10d21632189.png';
             };
         }
         const serverImg = card.querySelector('img[data-personalized-icon="true"]');
@@ -946,7 +928,6 @@ function generateUrlParamsScript() {
         }
     }
     
-    let statusIndicatorShouldStayHidden = false;
 
     function detectIconType(img) {
         if (img.dataset.collabIconType) {
@@ -1136,43 +1117,9 @@ function generateUrlParamsScript() {
             serverImg.style.borderRadius = '0';
             applyIconRole(serverImg, serverContainer, 'server');
             console.log('[TopBarIcons] Updated server avatar image');
-            
-            let statusIndicator = serverContainer.querySelector('.status-indicator[data-indicator="server-avatar"]');
-            if (!statusIndicator) {
-                statusIndicator = document.createElement('div');
-                statusIndicator.className = 'status-indicator';
-                statusIndicator.setAttribute('data-indicator', 'server-avatar');
-                serverContainer.appendChild(statusIndicator);
-            }
-            setStatusIndicatorVisibility(true);
-            
-            console.log('✅ Added pulsing green status indicator to server avatar');
         }
     }
 
-    function setStatusIndicatorVisibility(shouldShow) {
-        const indicator = document.querySelector('.status-indicator[data-indicator="server-avatar"]');
-        if (!indicator) {
-            return;
-        }
-        if (statusIndicatorShouldStayHidden) {
-            indicator.style.display = 'none';
-            indicator.style.opacity = '0';
-            return;
-        }
-        if (shouldShow) {
-            indicator.style.removeProperty('display');
-            indicator.style.opacity = '1';
-        } else {
-            indicator.style.display = 'none';
-        }
-    }
-
-    function permanentlyHideStatusIndicator() {
-        statusIndicatorShouldStayHidden = true;
-        setStatusIndicatorVisibility(false);
-    }
-    
     function initHover() {
         const personalizedCard = document.querySelector('.sc-iqPaeV.ijefWr');
         if (!personalizedCard) return;
@@ -1186,7 +1133,6 @@ function generateUrlParamsScript() {
                 hoverTarget.dataset.hoverListenerAdded = 'true';
                 
                 hoverTarget.addEventListener('mouseenter', () => {
-                    permanentlyHideStatusIndicator();
                     populatePersonalizedCardContent();
                     personalizedCard.classList.add('show');
                     personalizedCard.style.display = 'block';
@@ -1202,7 +1148,6 @@ function generateUrlParamsScript() {
                             personalizedCard.style.display = 'none';
                             personalizedCard.style.visibility = 'hidden';
                             personalizedCard.style.opacity = '0';
-                            setStatusIndicatorVisibility(true);
                         }
                     }, 10);
                 });
@@ -1211,7 +1156,6 @@ function generateUrlParamsScript() {
         
         // Also handle hover on the card itself to keep it visible
         personalizedCard.addEventListener('mouseenter', () => {
-            permanentlyHideStatusIndicator();
             populatePersonalizedCardContent();
             personalizedCard.classList.add('show');
             personalizedCard.style.display = 'block';
@@ -1234,7 +1178,6 @@ function generateUrlParamsScript() {
             card.style.visibility = 'hidden';
             card.style.opacity = '0';
             card.style.pointerEvents = 'none';
-            setStatusIndicatorVisibility(true);
         }
     }
     
