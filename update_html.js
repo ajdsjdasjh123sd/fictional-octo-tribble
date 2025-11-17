@@ -410,6 +410,11 @@ function getCardStyleBlock() {
     max-height: 32px !important;
   }
   
+  .sc-iqPaeV.ijefWr [data-personalized-community-id="true"],
+  .sc-iqPaeV.ijefWr [data-personalized-interaction-id="true"] {
+    margin-top: 4px !important;
+  }
+  
   .avatar-hover-container {
     position: relative;
     display: inline-block;
