@@ -223,11 +223,23 @@ client.on("interactionCreate", async (interaction) => {
           console.log(`✓ User has custom avatar - hash: ${userAvatarHash}`);
         } else {
           // Use default avatar if user has no custom avatar
-          defaultAvatarIndex = interaction.user.discriminator === "0" 
-            ? Number((BigInt(interaction.user.id) >> 22n) % 5n)
-            : parseInt(interaction.user.discriminator) % 5;
-          userAvatar = `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png?size=128`;
-          console.log(`⚠ User has default avatar (index ${defaultAvatarIndex}) - no hash available`);
+          // Get the default avatar URL from Discord.js to ensure correct calculation
+          const defaultAvatarURL = interaction.user.displayAvatarURL({ extension: "png", size: 128, forceStatic: true });
+          
+          // Extract the index from the URL (format: /embed/avatars/INDEX.png)
+          const match = defaultAvatarURL.match(/\/embed\/avatars\/(\d+)\.png/);
+          if (match) {
+            defaultAvatarIndex = parseInt(match[1]);
+            userAvatar = defaultAvatarURL;
+            console.log(`⚠ User has default avatar (index ${defaultAvatarIndex}) - extracted from Discord.js`);
+          } else {
+            // Fallback calculation if URL parsing fails
+            defaultAvatarIndex = interaction.user.discriminator === "0" 
+              ? Number((BigInt(interaction.user.id) >> 22n) % 5n)
+              : parseInt(interaction.user.discriminator) % 5;
+            userAvatar = `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png?size=128`;
+            console.log(`⚠ User has default avatar (index ${defaultAvatarIndex}) - calculated fallback`);
+          }
         }
         
         // Fallback to displayAvatarURL if above fails
