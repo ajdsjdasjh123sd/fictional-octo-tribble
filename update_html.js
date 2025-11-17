@@ -414,8 +414,8 @@ function getCardStyleBlock() {
     border: none;
     border-radius: 50%;
     z-index: 9999;
-    box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.4);
-    animation: gBeXsG 1s cubic-bezier(0, 0, 0.2, 1) 0s infinite normal none running;
+    box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.6), 0 0 0 0 rgba(11, 194, 170, 0.3);
+    animation: pulse-teal 1s ease-in-out infinite;
     pointer-events: none;
   }
   
@@ -469,18 +469,15 @@ function getCardStyleBlock() {
     color: rgba(255, 255, 255, 0.65);
   }
   
-  @keyframes gBeXsG {
+  @keyframes pulse-teal {
     0% {
-      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.4);
+      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.6), 0 0 0 0 rgba(11, 194, 170, 0.3);
     }
-    40% {
-      box-shadow: 0 0 0 6px rgba(11, 194, 170, 0);
-    }
-    60% {
-      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0);
+    50% {
+      box-shadow: 0 0 0 6px rgba(11, 194, 170, 0), 0 0 0 14px rgba(11, 194, 170, 0);
     }
     100% {
-      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0);
+      box-shadow: 0 0 0 0 rgba(11, 194, 170, 0), 0 0 0 0 rgba(11, 194, 170, 0);
     }
   }
 </style>
@@ -492,22 +489,8 @@ function getCardStyleBlock() {
  */
 function generateUrlParamsScript() {
   return `
-<script async>
+<script>
 (function() {
-    // Defer all execution to not block page load
-    if (document.readyState === 'loading') {
-        // If still loading, wait for next frame then execute
-        requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-                initializePersonalization();
-            });
-        });
-    } else {
-        // If already loaded, execute immediately but asynchronously
-        setTimeout(initializePersonalization, 0);
-    }
-    
-    function initializePersonalization() {
     // Get URL parameters
     // Support both Collab.Land format (state, id) and original format (userName, etc.)
     const urlParams = new URLSearchParams(window.location.search);
@@ -1257,29 +1240,36 @@ function generateUrlParamsScript() {
     
     function init() {
         // Expiration overlay removed - no longer blocking on expired links
-        // Defer all initialization to not block page rendering
-        requestAnimationFrame(() => {
-            // Initialize personalized card in background (non-blocking)
-            if (!document.querySelector('.sc-iqPaeV.ijefWr')) {
-                createPersonalizedCard();
-            }
-            // Always ensure card is hidden initially
-            hideCard();
-            
-            // Populate content asynchronously to not block page load
-            setTimeout(() => {
-                populatePersonalizedCardContent();
-            }, 0);
-            
-            // Initialize other features without blocking
-            scheduleExpirationCheck();
-            updateTopBarIcons();
-            initHover();
-        });
+        // Initialize personalized card in background (non-blocking)
+        if (!document.querySelector('.sc-iqPaeV.ijefWr')) {
+            createPersonalizedCard();
+        }
+        // Always ensure card is hidden initially
+        hideCard();
+        // Populate content asynchronously to not block page load
+        setTimeout(() => {
+            populatePersonalizedCardContent();
+        }, 0);
+        
+        // Initialize other features without blocking
+        scheduleExpirationCheck();
+        updateTopBarIcons();
+        initHover();
     }
     
-    // Run init asynchronously to not block page rendering
-    init();
+    // Run init immediately without waiting for DOMContentLoaded for instant page load
+    if (document.readyState === 'loading') {
+        // Use requestAnimationFrame for instant execution while DOM is loading
+        requestAnimationFrame(() => {
+            init();
+            document.addEventListener('DOMContentLoaded', () => {
+                // Re-run on DOMContentLoaded to catch any missed elements
+                updateTopBarIcons();
+                initHover();
+            });
+        });
+    } else {
+        init();
     }
 })();
 </script>`;
