@@ -415,7 +415,7 @@ function getCardStyleBlock() {
     border-radius: 50%;
     z-index: 9999;
     box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.4);
-    animation: pulse-teal 2s ease-in-out infinite;
+    animation: gBeXsG 1s cubic-bezier(0, 0, 0.2, 1) 0s infinite normal none running;
     pointer-events: none;
   }
   
@@ -469,7 +469,7 @@ function getCardStyleBlock() {
     color: rgba(255, 255, 255, 0.65);
   }
   
-  @keyframes pulse-teal {
+  @keyframes gBeXsG {
     0% {
       box-shadow: 0 0 0 0 rgba(11, 194, 170, 0.4);
     }
