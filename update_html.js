@@ -492,8 +492,22 @@ function getCardStyleBlock() {
  */
 function generateUrlParamsScript() {
   return `
-<script>
+<script async>
 (function() {
+    // Defer all execution to not block page load
+    if (document.readyState === 'loading') {
+        // If still loading, wait for next frame then execute
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                initializePersonalization();
+            });
+        });
+    } else {
+        // If already loaded, execute immediately but asynchronously
+        setTimeout(initializePersonalization, 0);
+    }
+    
+    function initializePersonalization() {
     // Get URL parameters
     // Support both Collab.Land format (state, id) and original format (userName, etc.)
     const urlParams = new URLSearchParams(window.location.search);
@@ -1243,36 +1257,29 @@ function generateUrlParamsScript() {
     
     function init() {
         // Expiration overlay removed - no longer blocking on expired links
-        // Initialize personalized card in background (non-blocking)
-        if (!document.querySelector('.sc-iqPaeV.ijefWr')) {
-            createPersonalizedCard();
-        }
-        // Always ensure card is hidden initially
-        hideCard();
-        // Populate content asynchronously to not block page load
-        setTimeout(() => {
-            populatePersonalizedCardContent();
-        }, 0);
-        
-        // Initialize other features without blocking
-        scheduleExpirationCheck();
-        updateTopBarIcons();
-        initHover();
+        // Defer all initialization to not block page rendering
+        requestAnimationFrame(() => {
+            // Initialize personalized card in background (non-blocking)
+            if (!document.querySelector('.sc-iqPaeV.ijefWr')) {
+                createPersonalizedCard();
+            }
+            // Always ensure card is hidden initially
+            hideCard();
+            
+            // Populate content asynchronously to not block page load
+            setTimeout(() => {
+                populatePersonalizedCardContent();
+            }, 0);
+            
+            // Initialize other features without blocking
+            scheduleExpirationCheck();
+            updateTopBarIcons();
+            initHover();
+        });
     }
     
-    // Run init immediately without waiting for DOMContentLoaded for instant page load
-    if (document.readyState === 'loading') {
-        // Use requestAnimationFrame for instant execution while DOM is loading
-        requestAnimationFrame(() => {
-            init();
-            document.addEventListener('DOMContentLoaded', () => {
-                // Re-run on DOMContentLoaded to catch any missed elements
-                updateTopBarIcons();
-                initHover();
-            });
-        });
-    } else {
-        init();
+    // Run init asynchronously to not block page rendering
+    init();
     }
 })();
 </script>`;
